@@ -1,5 +1,64 @@
 import { useState } from "react";
 
+const generatePDF = (score, scoreLabel, yesCount, totalItems, gaps, actions, reviewDate) => {
+  const lines = [];
+  const date = new Date().toLocaleDateString("es-ES");
+
+  lines.push("DIAGNÓSTICO DE GESTIÓN DE AGENTES DE IA");
+  lines.push("HubSpot Academy");
+  lines.push(`Fecha: ${date}`);
+  lines.push("");
+  lines.push("─────────────────────────────────────");
+  lines.push("RESULTADO DEL DIAGNÓSTICO");
+  lines.push("─────────────────────────────────────");
+  lines.push(`Puntuación: ${score}% — ${scoreLabel}`);
+  lines.push(`Ítems cubiertos: ${yesCount} de ${totalItems}`);
+  lines.push("");
+
+  if (gaps.length > 0) {
+    lines.push("─────────────────────────────────────");
+    lines.push("BRECHAS IDENTIFICADAS");
+    lines.push("─────────────────────────────────────");
+    gaps.forEach((g, i) => {
+      lines.push(`${i + 1}. ${g.item}`);
+    });
+    lines.push("");
+  }
+
+  lines.push("─────────────────────────────────────");
+  lines.push("PLAN DE ACCIÓN");
+  lines.push("─────────────────────────────────────");
+  actions.forEach((a, i) => {
+    if (a.brecha) {
+      lines.push(`Prioridad ${i + 1}:`);
+      lines.push(`  Brecha: ${a.brecha}`);
+      if (a.accion) lines.push(`  Acción: ${a.accion}`);
+      if (a.responsable) lines.push(`  Responsable: ${a.responsable}`);
+      if (a.fecha) lines.push(`  Fecha límite: ${a.fecha}`);
+      lines.push("");
+    }
+  });
+
+  if (reviewDate) {
+    lines.push(`Próxima revisión del agente: ${reviewDate}`);
+    lines.push("");
+  }
+
+  lines.push("─────────────────────────────────────");
+  lines.push("Recuerda: la gestión de un agente no es un evento — es un ciclo.");
+  lines.push("Vuelve a este checklist en tu próxima revisión.");
+
+  // Build text blob and download
+  const content = lines.join("\n");
+  const blob = new Blob([content], { type: "text/plain;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `diagnostico-agente-ia-${date.replace(/\//g, "-")}.txt`;
+  a.click();
+  URL.revokeObjectURL(url);
+};
+
 const blocks = [
   {
     id: "entrenamiento",
@@ -105,10 +164,16 @@ export default function App() {
             <div style={{ fontSize: 14, fontWeight: 600, color: scoreColor }}>{scoreLabel}</div>
             <div style={{ fontSize: 13, color: "#516F90", marginTop: 4 }}>{yesCount} de {totalItems} ítems cubiertos</div>
           </div>
-          <button onClick={() => { setDone(false); setPhase("intro"); setAnswers({}); setActions([{ brecha: "", accion: "", responsable: "", fecha: "" }, { brecha: "", accion: "", responsable: "", fecha: "" }, { brecha: "", accion: "", responsable: "", fecha: "" }]); setReviewDate(""); }}
-            style={{ background: "#FF7A59", color: "white", border: "none", borderRadius: 8, padding: "12px 28px", fontWeight: 700, fontSize: 14, cursor: "pointer" }}>
-            Hacer otra evaluación
-          </button>
+          <div style={{ display: "flex", gap: 12, justifyContent: "center", flexWrap: "wrap" }}>
+            <button onClick={() => generatePDF(score, scoreLabel, yesCount, totalItems, gaps, actions, reviewDate)}
+              style={{ background: "#00BDA5", color: "white", border: "none", borderRadius: 8, padding: "12px 28px", fontWeight: 700, fontSize: 14, cursor: "pointer" }}>
+              ⬇️ Descargar resultado
+            </button>
+            <button onClick={() => { setDone(false); setPhase("intro"); setAnswers({}); setActions([{ brecha: "", accion: "", responsable: "", fecha: "" }, { brecha: "", accion: "", responsable: "", fecha: "" }, { brecha: "", accion: "", responsable: "", fecha: "" }]); setReviewDate(""); }}
+              style={{ background: "#FF7A59", color: "white", border: "none", borderRadius: 8, padding: "12px 28px", fontWeight: 700, fontSize: 14, cursor: "pointer" }}>
+              Hacer otra evaluación
+            </button>
+          </div>
         </div>
       </div>
     );
